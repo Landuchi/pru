@@ -2514,7 +2514,7 @@ body[dir="rtl"] .app-bar-heading {
 }
 
 .app-has-sidebar-left:not(.app-has-minisidebar-left) .app-btn-menu-background {
-    width: 216px;
+    width: 259px;
     z-index: 0;
 }
 
@@ -2661,7 +2661,7 @@ div.app-menu-footer {
 .app-sidebar {
     display: none;
     top: 0;
-    width: 216px;
+    width: 259px;
     background-color: #e9e9e9;
 }
 
@@ -9594,7 +9594,7 @@ app-onecolumnview .app-field-data-rtf {
 
 .app-sidebar .app-bar-toolbar-bottom {
     border-top: solid 1px #ccc;
-    padding: 0 0 0 7px;
+    padding: 0 0 0 4px;
     white-space: nowrap;
     background-color: #e9e9e9;
     /*box-shadow: 0 0 10px 0 rgba(0,0,0,0.4);*/
@@ -9605,8 +9605,7 @@ app-onecolumnview .app-field-data-rtf {
         margin: 0;
         border-width: 0;
         padding: 16px 9px !important;
-        width: 24px;
-        width: 24px;
+        width: 30px;
         height: 24px;
         text-indent: -9999px;
     }

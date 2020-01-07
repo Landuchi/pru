@@ -551,7 +551,10 @@ namespace MyCompany.Data
         
         protected virtual void ProcessResult(ControllerConfiguration config, ActionResult result)
         {
-            if (_pk != null)
+            if (_pk == null)
+            	foreach (var fvo in result.Values)
+                	_commitResult.Values.Add(new ControllerFieldValue(config.ControllerName, fvo.Name, fvo.OldValue, fvo.NewValue));
+            else
             	foreach (var fvo in result.Values)
                 	if (fvo.Name == _pk.Name)
                     {

@@ -1232,7 +1232,7 @@
     function tapping(allow) {
         if (!arguments.length)
             allow = true;
-        skipTap = false;
+        skipTap = !allow;
     }
 
     function goForwardTo(pageId) {
@@ -1455,7 +1455,7 @@
                 var currentActivePageId = getActivePageId();
                 if (activePageId === currentActivePageId || currentActivePageId === 'Main')
                     callback();
-                else if (findActivePage().prevAll('.ui-page').filter(function () { return $(this).attr('id') === activePageId }).length)
+                else if (findActivePage().prevAll('.ui-page').filter(function () { return $(this).attr('id') === activePageId; }).length)
                     whenPageCanceled(callback, activePageId);
             }
         });
@@ -2414,7 +2414,7 @@
             animation({
                 position: function () {
                     toPage.css({ opacity: 0 });
-                    modalBackground.css({ opacity: 0 })
+                    modalBackground.css({ opacity: 0 });
                 },
                 transition: function () {
                     toPage.addClass('app-transition-fade-in');
@@ -4979,6 +4979,7 @@
         //    $body.addClass('app-labelsinform-alignedright');
         if ($settings('ui.list.labels.display') === 'DisplayedAbove')
             $body.addClass('app-labelsinlist-displayedabove');
+
         $(document).trigger('starting.app');
     }
 
@@ -9438,6 +9439,8 @@
         //});
         return false;
     }).on('vclick', '.app-bar-actions .ui-btn, .app-echo-toolbar .ui-btn', function (e, feedback) {
+        if (skipTap)
+            return;
         var echo = $(this).closest('.app-echo'),
             dataViewId = echo.length ? echo.attr('data-for') : getPageInfo().id,
             link = $(e.target).closest('a'),
@@ -9445,6 +9448,7 @@
             option = link.data('data-context');
 
         function buttonClicked() {
+            tapping();
             var group = option.context && option.context.group,
                 context = [],
                 dataView = getPageInfo(dataViewId).dataView;
@@ -9464,10 +9468,11 @@
         if (option) {
             if (link.length && !mobileBusy()) {
                 echoFocus(link, false);
+                tapping(false);
                 if (feedback !== false)
                     callWithFeedback(link, buttonClicked);
                 else
-                    buttonClicked();
+                    setTimeout(buttonClicked);
             }
             return false;
         }
@@ -18333,16 +18338,19 @@
             var pageInfo = mobile.pageInfo(),
                 dataView = pageInfo.dataView;
             whenPageCanceled(function () {
-                var survey = dataView && dataView.survey();
-                if (survey) {
-                    var cancel = survey._cancel;
-                    if (pageInfo._canceled)
-                        promise.reject();
-                    else {
+                if (pageInfo._canceled)
+                    promise.reject();
+                else {
+                    var survey = dataView && dataView.survey();
+                    if (survey) {
+                        var cancel = survey._cancel;
                         if (cancel === false)
                             cancel = survey._submit;
                         if (cancel)
-                            cancel();
+                            if (cancel !== nop)
+                                cancel();
+                            else
+                                promise.reject();
                         else
                             promise.resolve();
                     }
@@ -18387,7 +18395,7 @@
         pageTransitions(false);
         whenPageShown(function () {
             pageTransitions(true);
-            if (callback)
+            if (callback && callback !== nop)
                 callback();
             else if (confirmed)
                 promise.resolve();
@@ -22733,15 +22741,12 @@
                             activeUrl = prevPage.attr('data-url');
                             setTimeout(function () {
                                 goForwardTo(prevPageId);
-                                _app.confirm(resourcesData.DiscardChanges, function () {
-                                    prevDataView.changed('ignore', true);
-                                    goBack();
-                                },
-                                    focusLastInput
-                                    //function () {
-                                    //    _input.focus({ lastFocused: true });
-                                    //}
-                                );
+                                _app.confirm(resourcesData.DiscardChanges)
+                                    .then(function () {
+                                        prevDataView.changed('ignore', true);
+                                        setTimeout(goBack);
+                                    })
+                                    .fail(focusLastInput);
                             });
                             e.preventDefault();
                             return false;
@@ -28065,7 +28070,8 @@
         }
 
         var originalText = text,
-            inputBuffer = _input._buffer;
+            inputBuffer = _input._buffer,
+            inputEnhancementAttributes = { autocapitalize: 'off', autocorrect: 'off' };
         if (inputBuffer != null)
             text = inputBuffer.match(/Backspace|Del|Delete/) ? '' : inputBuffer;
 
@@ -28104,8 +28110,11 @@
                 change: getValueEvent.change, last: text
             });
             getValueEvent.change = null;
-            textInput.attr({ autocomplete: 'false', autocorrect: 'false', autocapitalize: 'false', spellcheck: 'false' });
+            inputEnhancementAttributes.autocomplete = 'off';
+            inputEnhancementAttributes.spellcheck = 'false';
         }
+        if (!isRtf)
+            textInput.attr(inputEnhancementAttributes);
 
         dataType = dataInput.attr('data-type');
         if (!dataType) {

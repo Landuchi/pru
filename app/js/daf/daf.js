@@ -4786,7 +4786,7 @@
             else
                 that._syncKey = that.get_selectedKey();
         },
-        sync: function (keyValues) {
+        sync: function (keyValues, refreshContext) {
             var that = this, i, row;
             that._clearCache();
             if (keyValues) {
@@ -4798,6 +4798,8 @@
                 that._raiseSelectedDelayed = true;
                 that._pendingSelectedEvent = true;
                 that._selectKeyByRow(row);
+                if (refreshContext)
+                    that._requiresContextRefresh = true;
             }
             that._forceSync();
             that.refreshAndResize();
@@ -9915,7 +9917,7 @@
             function finished(message) {
                 _touch.busy(false);
                 _touch.notify(message ? { text: message, force: true, duration: 'long' } : false);
-                _app.find(options.id).sync();
+                _app.find(options.id).sync(options.sync, true);
             }
 
             if (index < files.length) {
@@ -9935,6 +9937,8 @@
                         var key = result[controllerName][options.key];
                         if (key == null && options.name === options.key)
                             key = f.name;
+                        if (!options.sync)
+                            options.sync = key;
                         _odp.uploadFile({ apiVer: 2, key: key, handler: options.handler, file: f }).then(function () {
                             _app.upload.multi.send(options);
                         }).fail(function () {
@@ -10006,8 +10010,13 @@
 
     _app.uploadFileAjax = function (options) {
         var formData = new FormData(),
-            names = options.names;
-        $(options.files).each(function (index) {
+            names = options.names,
+            files = options.files;
+
+        if (!('length' in files))
+            files = [files];
+
+        $(files).each(function (index) {
             var f = this;
             if (f.size)
                 if (names)
